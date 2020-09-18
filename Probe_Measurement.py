@@ -102,9 +102,11 @@ class Probe_Measurement():
                 put `x=0,y=0` for subsite 1 in P200L navigator. 
         """
         start_time = dt.datetime.now()
+
         self.p200.auto_raise(True)
         self.p200.auto_lower(True)
         self.p200.use_pattern_recognition(use_pattern_recognition)
+
         try:
             if reset_die:
                 self.reset_data_array()
@@ -117,16 +119,16 @@ class Probe_Measurement():
                 self.probe_die(subsites=subsites)
                 x_index, y_index = self.p200.goto_next_die()
         except KeyboardInterrupt:
+            end_time = dt.datetime.now()
             print(
                 f'KeyboardInterrupt detected. '
-                f'Total time: {round((time()-start_time)/60,2)} minutes'
+                f'Total time: {end_time - start_time}'
             )
             self.p200.send_command(f':WFR:BIN {x_index} {y_index} T')
             raise
         except:
-            print(
-                f'Error. Total time: {round((time()-start_time)/60,2)} minutes'
-            )
+            end_time = dt.datetime.now()
+            print(f'Error. Total time: {end_time - start_time}')
             raise
 
         end_time = dt.datetime.now()
