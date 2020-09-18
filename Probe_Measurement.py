@@ -6,6 +6,7 @@ This is a module for taking automated measurements with the probe station.
 from time import sleep, time
 
 import datetime as dt
+import numpy as np
 
 from probe_station.P200L import P200L
 from probe_station.SR810_lockin import SR810_lockin
@@ -39,6 +40,7 @@ class Probe_Measurement():
         self.lockin = SR810_lockin()
         self.measure_time = 1
         self.data = None
+        self.times = None
 
         if wafer_file is not None:
             self.p200.load_wafer_file(wafer_file)
@@ -59,6 +61,7 @@ class Probe_Measurement():
 
         (x_count, y_count) = self.p200.wafer_array_shape()
         self.data = [[[] for _ in range(y_count)] for _ in range(x_count)]
+        self.times = [[[] for _ in range(y_count)] for _ in range(x_count)]
         self.p200.reset_die()
         
     def probe_die(self, subsites=True):
@@ -73,19 +76,27 @@ class Probe_Measurement():
         	index = 1
         	self.p200.goto_subsite(1)
         	self.data[x_i][y_i] = []
+            self.times[x_i][y_i] = []
         	while index != -1:
         		sleep(self.measure_time)
         		self.data[x_i][y_i].append(self.lockin.voltage_in())
+                self.times[x_i][y_i].append(dt.datetime.now())
         		index = self.p200.goto_next_subsite()
         	print(f'Die time {round((time()-tic)/60,2)} minutes')
         else:
         	self.data[x_i][y_i] = []
+            self.times[x_i][y_i] = []
         	sleep(self.measure_time)
         	self.data[x_i][y_i].append(self.lockin.voltage_in())
+            self.times[x_i][y_i].append(dt.datetime.now())
         	print(f'Die time {round((time()-tic)/60,2)} minutes')
 
     def probe_wafer(
-        self, reset_die=True, use_pattern_recognition=True, subsites=True
+        self,
+        reset_die=True,
+        use_pattern_recognition=True,
+        subsites=True,
+        checkpoint=None
     ):
         """Probe a full wafer. 
         
@@ -107,6 +118,13 @@ class Probe_Measurement():
         self.p200.auto_lower(True)
         self.p200.use_pattern_recognition(use_pattern_recognition)
 
+        if checkpoint:
+            np.savez(
+                checkpoint,
+                probe_values=np.array(self.data),
+                times=np.array(self.times)
+            )
+
         try:
             if reset_die:
                 self.reset_data_array()
@@ -117,7 +135,16 @@ class Probe_Measurement():
                 x_index, y_index = self.p200.goto_same_die()
             while x_index < 1e6: # after the last die, x_index goes to a big number
                 self.probe_die(subsites=subsites)
+
+                if checkpoint:
+                    np.savez(
+                        checkpoint,
+                        probe_values=np.array(self.data),
+                        times=np.array(self.times)
+                    )
+
                 x_index, y_index = self.p200.goto_next_die()
+
         except KeyboardInterrupt:
             end_time = dt.datetime.now()
             print(
