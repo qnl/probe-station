@@ -58,7 +58,6 @@ class Probe_Measurement():
         Args:
             reset_wafer_map: reset the wafer map so that all sites are untested
         """
-
         (x_count, y_count) = self.p200.wafer_array_shape()
         self.data = [[[] for _ in range(y_count)] for _ in range(x_count)]
         self.times = [[[] for _ in range(y_count)] for _ in range(x_count)]
@@ -73,23 +72,23 @@ class Probe_Measurement():
         tic = time()
 
         if subsites is True:
-        	index = 1
-        	self.p200.goto_subsite(1)
-        	self.data[x_i][y_i] = []
+            index = 1
+            self.p200.goto_subsite(1)
+            self.data[x_i][y_i] = []
             self.times[x_i][y_i] = []
-        	while index != -1:
-        		sleep(self.measure_time)
-        		self.data[x_i][y_i].append(self.lockin.voltage_in())
+            while index != -1:
+                sleep(self.measure_time)
+                self.data[x_i][y_i].append(self.lockin.voltage_in())
                 self.times[x_i][y_i].append(dt.datetime.now())
-        		index = self.p200.goto_next_subsite()
-        	print(f'Die time {round((time()-tic)/60,2)} minutes')
+                index = self.p200.goto_next_subsite()
+            print(f'Die time {round((time()-tic)/60,2)} minutes')
         else:
-        	self.data[x_i][y_i] = []
+            self.data[x_i][y_i] = []
             self.times[x_i][y_i] = []
-        	sleep(self.measure_time)
-        	self.data[x_i][y_i].append(self.lockin.voltage_in())
+            sleep(self.measure_time)
+            self.data[x_i][y_i].append(self.lockin.voltage_in())
             self.times[x_i][y_i].append(dt.datetime.now())
-        	print(f'Die time {round((time()-tic)/60,2)} minutes')
+            print(f'Die time {round((time()-tic)/60,2)} minutes')
 
     def probe_wafer(
         self,
@@ -130,7 +129,7 @@ class Probe_Measurement():
                 self.reset_data_array()
                 x_index, y_index = self.p200.goto_first_die()
             else:
-            	# instead of going to next die, repeat the current die
+                # instead of going to next die, repeat the current die
                 # x_index, y_index = self.p200.goto_next_die()
                 x_index, y_index = self.p200.goto_same_die()
             while x_index < 1e6: # after the last die, x_index goes to a big number
