@@ -49,6 +49,8 @@ class Probe_Measurement():
             self.p200.load_subsite_file(subsite_file)
         self.reset_data_array(reset_wafer_map=reset_wafer_map)
 
+        self.adjust = None
+
     def reset_data_array(self, reset_wafer_map=True):
         """Reset data.
         
@@ -164,3 +166,25 @@ class Probe_Measurement():
         print(
             f'Wafer Done. Total time: {end_time - start_time}'
         )
+
+    def calibrate(self, data):
+        """feed the class with calibration data
+
+        Assumes that initial calibration has been done already on at least 3 points. Compute
+        a plane equation for this in order to adjust the height of Z lowering in order to
+        reduce scratch on the wafer's surface. The plane equation would be saved to the field self.adjust
+        To not use this feature, simply do not call
+        this function before probe_wafer. To remove this functionality after being calibrated,
+        set the field self.adjust to None. To recalibrate, call this function with new data.
+
+        Args:
+            data: A 2D numpy array with 3 columns and at least 3 rows. The columns are
+                x_coordinate, y_coordinate, z_coordinate given in absolute distances
+                with units corresponding to the subsite map and the wafer marker coordinates.
+                Each row is a calibration point on
+                the wafer. Should look something like this:
+                array([[x1, y1, z1],
+                       [x2, y2, z2],
+                       [x3, y3, z3]])
+        """
+        self.adjust = lambda coords: np.dot(compute, np.array([coords[0],coords[1], 1]))
