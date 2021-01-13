@@ -187,4 +187,5 @@ class Probe_Measurement():
                        [x2, y2, z2],
                        [x3, y3, z3]])
         """
+        compute = np.linalg.lstsq(np.hstack(data[::, 0:2], np.ones(data.shape[0])), data[::, 2])
         self.adjust = lambda coords: np.dot(compute, np.array([coords[0],coords[1], 1]))
