@@ -192,7 +192,7 @@ class P200L():
         Args:
             wafer_file: File name to load.
         """
-        self.send_command(f':WFR:FILE {subsite_file}')
+        self.send_command(f':WFR:FILE {wafer_file}')
 
     def load_subsite_file(self, subsite_file):
         """Load a subsite file to the probe station. 
@@ -215,7 +215,7 @@ class P200L():
         retval = list(map(lambda x:x.split(','),self.send_command(':WFR:MAP:CSV?').split('~')))
         return int(retval[4][1]), int(retval[3][1])
 
-    def wafer_array_shape(self):
+    def subsite_array_shape(self):
         """Returns the size of the subsite array."""
 
         retval = list(map(lambda x:x.split(','),self.send_command(':WFR:MAP:CSV?').split('~')))
