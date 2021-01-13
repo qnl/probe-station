@@ -11,6 +11,7 @@ import numpy as np
 from probe_station.P200L import P200L
 from probe_station.SR810_lockin import SR810_lockin
 
+
 class Probe_Measurement():
     """Measurement class.
     """
@@ -35,8 +36,8 @@ class Probe_Measurement():
             reset_wafer_map: Reset the wafer map so that all sites are
                 untested.
         """
-        
-        self.p200 = P200L(ip=p200_ip,port=p200_port)
+
+        self.p200 = P200L(ip=p200_ip, port=p200_port)
         self.lockin = SR810_lockin()
         self.measure_time = 1
         self.data = None
@@ -47,7 +48,7 @@ class Probe_Measurement():
         if subsite_file is not None:
             self.p200.load_subsite_file(subsite_file)
         self.reset_data_array(reset_wafer_map=reset_wafer_map)
-    
+
     def reset_data_array(self, reset_wafer_map=True):
         """Reset data.
         
@@ -62,11 +63,11 @@ class Probe_Measurement():
         self.data = [[[] for _ in range(y_count)] for _ in range(x_count)]
         self.times = [[[] for _ in range(y_count)] for _ in range(x_count)]
         self.p200.reset_die()
-        
+
     def probe_die(self, subsites=True):
         """Probe the current die and update the probe value data array.
         """
-        
+
         x_i, y_i = self.p200.get_die()
         print(f'Starting die. x:{x_i}, y:{y_i}')
         tic = time()
@@ -81,21 +82,21 @@ class Probe_Measurement():
                 self.data[x_i][y_i].append(self.lockin.voltage_in())
                 self.times[x_i][y_i].append(dt.datetime.now())
                 index = self.p200.goto_next_subsite()
-            print(f'Die time {round((time()-tic)/60,2)} minutes')
+            print(f'Die time {round((time() - tic) / 60, 2)} minutes')
         else:
             self.data[x_i][y_i] = []
             self.times[x_i][y_i] = []
             sleep(self.measure_time)
             self.data[x_i][y_i].append(self.lockin.voltage_in())
             self.times[x_i][y_i].append(dt.datetime.now())
-            print(f'Die time {round((time()-tic)/60,2)} minutes')
+            print(f'Die time {round((time() - tic) / 60, 2)} minutes')
 
     def probe_wafer(
-        self,
-        reset_die=True,
-        use_pattern_recognition=True,
-        subsites=True,
-        checkpoint=None
+            self,
+            reset_die=True,
+            use_pattern_recognition=True,
+            subsites=True,
+            checkpoint=None
     ):
         """Probe a full wafer. 
         
@@ -132,7 +133,7 @@ class Probe_Measurement():
                 # instead of going to next die, repeat the current die
                 # x_index, y_index = self.p200.goto_next_die()
                 x_index, y_index = self.p200.goto_same_die()
-            while x_index < 1e6: # after the last die, x_index goes to a big number
+            while x_index < 1e6:  # after the last die, x_index goes to a big number
                 self.probe_die(subsites=subsites)
 
                 if checkpoint:
