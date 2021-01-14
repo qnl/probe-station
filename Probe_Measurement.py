@@ -15,6 +15,7 @@ from probe_station.SR810_lockin import SR810_lockin
 class Probe_Measurement():
     """Measurement class.
     """
+    DELTA = 5
 
     def __init__(self,
                  wafer_file=None,
@@ -181,12 +182,19 @@ class Probe_Measurement():
 
         Args:
             data: A 2D numpy array with 3 columns and at least 3 rows. The columns are
-                x_coordinate, y_coordinate, z_coordinate given in absolute distances
+                x_coordinate, y_coordinate, z_axis down distance given in absolute distances
                 with units corresponding to the subsite map and the wafer marker coordinates.
                 Each row is a calibration point on the wafer. Should look something like this:
                 array([[x1, y1, z1],
                        [x2, y2, z2],
                        [x3, y3, z3]])
+
+        Note: The procedure to find x and y coordinates and the z down distance
+              can likely be found on section 3.1.5 and 3.2 of the
+              NetProbe 7 Manual. Note that finding the z down distance requires
+              repeating the instructions in 3.1.5 on three different points of the wafer
         """
         compute = np.linalg.lstsq(np.hstack(data[::, 0:2], np.ones(data.shape[0])), data[::, 2])
         self.adjust = lambda coords: np.dot(compute, np.array([coords[0],coords[1], 1]))
+
+    def
