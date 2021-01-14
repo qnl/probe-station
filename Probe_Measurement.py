@@ -51,6 +51,7 @@ class Probe_Measurement():
         self.reset_data_array(reset_wafer_map=reset_wafer_map)
 
         self.adjust = None
+        self.z_down = None
 
     def reset_data_array(self, reset_wafer_map=True):
         """Reset data.
@@ -195,7 +196,7 @@ class Probe_Measurement():
               repeating the instructions in 3.1.5 on three different points of the wafer
         """
         compute = np.linalg.lstsq(np.hstack(data[::, 0:2], np.ones(data.shape[0])), data[::, 2])
-        self.adjust = lambda coords: np.dot(compute, np.array([coords[0],coords[1], 1]))
+        self.adjust = lambda coords: np.vdot(compute, np.array([coords[0],coords[1], 1]))
 
     def change_z_down(self, x, y):
         """Checks if down distance needs to be modified. If so, modify it.
@@ -209,3 +210,10 @@ class Probe_Measurement():
             x: the absolute x distance (mm)
             y: the absolute y distance (mm)
         """
+        if self.adjust is None:
+            return
+        z_proper = self.adjust((x, y))
+        if self.z_down is not None and (self.z_down - z_proper) < self.DELTA:
+            return
+        self.z_down = z_proper
+        self.p200.set_z_down(z_proper)
