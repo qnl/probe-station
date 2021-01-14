@@ -182,7 +182,7 @@ class Probe_Measurement():
 
         Args:
             data: A 2D numpy array with 3 columns and at least 3 rows. The columns are
-                x_coordinate, y_coordinate, z_axis down distance given in absolute distances
+                x distance (mm), y distance (mm), z_axis down distance (microns) given in absolute distances
                 with units corresponding to the subsite map and the wafer marker coordinates.
                 Each row is a calibration point on the wafer. Should look something like this:
                 array([[x1, y1, z1],
@@ -197,4 +197,15 @@ class Probe_Measurement():
         compute = np.linalg.lstsq(np.hstack(data[::, 0:2], np.ones(data.shape[0])), data[::, 2])
         self.adjust = lambda coords: np.dot(compute, np.array([coords[0],coords[1], 1]))
 
-    def
+    def change_z_down(self, x, y):
+        """Checks if down distance needs to be modified. If so, modify it.
+
+        Given the next probe location, this function computes the proper
+        z_down distance suggested by the calibration function. If the actual
+        distance and the proper distance differs, this function will update the
+        z_down attribute to the proper distance.
+
+        Args:
+            x: the absolute x distance (mm)
+            y: the absolute y distance (mm)
+        """
