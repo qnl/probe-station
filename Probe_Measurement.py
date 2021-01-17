@@ -87,6 +87,9 @@ class Probe_Measurement():
                 self.data[x_i][y_i].append(self.lockin.voltage_in())
                 self.times[x_i][y_i].append(dt.datetime.now())
                 index = self.p200.goto_next_subsite()
+                if self.adjust:
+                    x_sub, y_sub = self.p200.get_subsite_offsets()
+                    self.change_z_down(x_sub + x_coord, y_sub + y_coord)
             print(f'Die time {round((time() - tic) / 60, 2)} minutes')
         else:
             self.data[x_i][y_i] = []

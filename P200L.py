@@ -232,3 +232,7 @@ class P200L():
     def get_xy_coords(self):
         """Gets the x and y coordinates with respect to home"""
         return list(map(float, self.send_command(':PRB:POS:XYZNO?').split(" ")))[:2]
+
+    def get_subsite_offsets(self):
+        """Gets the subsite offset for the current subsite"""
+        return list(map(float, self.send_command(':SUB:CURR?').split(" ")))[1:3]
