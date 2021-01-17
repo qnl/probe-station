@@ -228,3 +228,7 @@ class P200L():
         prev_vals[1] = str(z_down)
         prev_vals = ' '.join(prev_vals)
         self.send_command(f':PRB:UDO: {prev_vals}')
+
+    def get_xy_coords(self):
+        """Gets the x and y coordinates with respect to home"""
+        return list(map(float, self.send_command(':PRB:POS:XYZNO?').split(" ")))[:2]

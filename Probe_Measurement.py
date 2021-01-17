@@ -73,6 +73,7 @@ class Probe_Measurement():
         """
 
         x_i, y_i = self.p200.get_die()
+        x_coord, y_coord = self.p200.get_xy_coords()  # coordinate of die location
         print(f'Starting die. x:{x_i}, y:{y_i}')
         tic = time()
 
@@ -90,6 +91,7 @@ class Probe_Measurement():
         else:
             self.data[x_i][y_i] = []
             self.times[x_i][y_i] = []
+            self.change_z_down(x_coord, y_coord)
             sleep(self.measure_time)
             self.data[x_i][y_i].append(self.lockin.voltage_in())
             self.times[x_i][y_i].append(dt.datetime.now())
@@ -183,7 +185,8 @@ class Probe_Measurement():
 
         Args:
             data: A 2D numpy array with 3 columns and at least 3 rows. The columns are
-                x distance (mm), y distance (mm), z_axis down distance (microns) given in absolute distances
+                x distance (mm), y distance (mm), z_axis down distance (microns) given in 
+                absolute distances with respect to the home position
                 with units corresponding to the subsite map and the wafer marker coordinates.
                 Each row is a calibration point on the wafer. Should look something like this:
                 array([[x1, y1, z1],
