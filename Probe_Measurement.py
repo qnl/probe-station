@@ -219,16 +219,9 @@ class Probe_Measurement():
         if self.adjust is None:
             return
         z_proper = self.adjust((x, y))
-        if self.z_down is not None and (self.z_down - z_proper) < self.DELTA:
+        if self.z_down is not None and abs(self.z_down - z_proper) < self.DELTA:
             return
         self.z_down = z_proper
         self.p200.set_z_down(z_proper)
 
-class Probe_Offline(Probe_Measurement):
-    """Offline version of Probe_Measurement for Testing purposes"""
-    def __init__(self):
-        self.adjust = None
-        self.z_down = None
-        self.measure_time = 1
-        self.data = None
-        self.times = None
+
