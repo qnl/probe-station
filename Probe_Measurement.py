@@ -202,7 +202,7 @@ class Probe_Measurement():
               repeating the instructions in 3.1.5 on three different points of the wafer
         """
         compute = np.linalg.lstsq(np.hstack((data[::, 0:2], np.ones((data.shape[0], 1)))), data[::, 2])
-        self.adjust = lambda coords: np.vdot(compute, np.array([coords[0], coords[1], 1]))
+        self.adjust = lambda coords: np.vdot(compute[0], np.array([coords[0], coords[1], 1]))
 
     def change_z_down(self, x, y):
         """Checks if down distance needs to be modified. If so, modify it.
