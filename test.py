@@ -10,10 +10,22 @@ class TestCalibration:
         assert subject.adjust((2, 0)) == 0
         assert subject.adjust((0, 2)) == 2
 
+class classy:
+    def init(self):
+        self.method = None
+    
+    def add_one(self):
+        self.method = lambda x: x+1
+
 
 class TestClass:
     def test_one(self):
-        assert 0
+        assert 1
+        
+    def test_classy(self):
+        clas = classy()
+        clas.add_one()
+        assert 1 == clas.method(0)
 
 
 if __name__ == '__main__':
