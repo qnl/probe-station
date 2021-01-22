@@ -223,5 +223,6 @@ class Probe_Measurement():
             return
         self.z_down = z_proper
         self.p200.set_z_down(z_proper)
+        print("z_down changed to {0}".format(self.z_down))
 
 
