@@ -8,8 +8,8 @@ from time import sleep, time
 import datetime as dt
 import numpy as np
 
-from probe_station.P200L import P200L
-from probe_station.SR810_lockin import SR810_lockin
+from P200L import P200L
+from SR810_lockin import SR810_lockin
 
 
 class Probe_Measurement():
@@ -223,3 +223,12 @@ class Probe_Measurement():
             return
         self.z_down = z_proper
         self.p200.set_z_down(z_proper)
+
+class Probe_Offline(Probe_Measurement):
+    """Offline version of Probe_Measurement for Testing purposes"""
+    def __init__(self):
+        self.adjust = None
+        self.z_down = None
+        self.measure_time = 1
+        self.data = None
+        self.times = None
