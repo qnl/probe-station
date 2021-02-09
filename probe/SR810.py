@@ -8,7 +8,7 @@ GPIB commands.
 
 import visa
 
-class SR810_lockin():
+class SR810():
     def __init__(self,gpib_addr='GPIB0::8::INSTR'):
         self.gpib_addr = gpib_addr
         self.dev = visa.ResourceManager().open_resource(gpib_addr)
@@ -137,6 +137,6 @@ class SR810_lockin():
 
 
 if __name__ == '__main__':
-    inst = SR810_lockin('GPIB0::8::INSTR')
+    inst = SR810('GPIB0::8::INSTR')
     print(inst.voltage_in())
     print(inst.voltage_out(1))

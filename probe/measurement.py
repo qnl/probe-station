@@ -10,10 +10,10 @@ import numpy as np
 from pathlib import Path
 from time import sleep, time
 
-from probe_station.P200L import P200L
-from probe_station.SR810_lockin import SR810_lockin
+from probe.P200L import P200L
+from probe.SR810 import SR810
 
-class Probe_Measurement():
+class ProbeMeasurement():
     """Measurement class.
     """
 
@@ -45,7 +45,7 @@ class Probe_Measurement():
 
         if online:
             self._p200 = P200L(ip=p200_ip,port=p200_port)
-            self._lockin = SR810_lockin()
+            self._lockin = SR810()
 
         self.h5 = None
 
