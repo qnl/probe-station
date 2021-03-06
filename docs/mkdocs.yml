@@ -1,0 +1,52 @@
+site_name: ProbeStation
+site_url: https://qnl.github.io/probe_station
+repo_name: qnl/probe-station
+repo_url: https://github.com/qnl/probe-station
+docs_dir: pages
+nav:
+  - ProbeStation: index.md
+markdown_extensions:
+  - admonition
+  - codehilite:
+      linenums: true
+  - footnotes
+  - pymdownx.arithmatex
+  - pymdownx.caret
+  - pymdownx.magiclink
+  - pymdownx.superfences
+  - pymdownx.tabbed
+  - pymdownx.tilde
+  - toc:
+      permalink: true
+theme:
+  name: material
+  custom_dir: overrides
+  font:
+    text: Roboto
+    code: Fira Code, Inconsolata
+  palette:
+    primary: berkeley-blue
+    accent: medalist
+  icon:
+    logo: material/home
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          rendering:
+            show_source: true
+            show_root_heading: true
+            show_if_no_docstring: true
+            heading_level: 2
+          selection:
+            inherited_members: true
+      default_handler: python
+      watch:
+        - ../probe-station
+extra_css:
+  - assets/stylesheets/mkdocstrings.css
+  - assets/stylesheets/palette.css
+  - assets/stylesheets/layout.css
+extra_javascript:
+  - https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js?config=TeX-MML-AM_CHTML
