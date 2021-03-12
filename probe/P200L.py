@@ -83,7 +83,7 @@ class P200L():
         x,y = self.send_command(f':WFR:POS:CR?').split(' ')
         return int(x),int(y)
 
-    def reset_die(self):
+    def reset_wafer(self):
         """Reset all dies to untested in the wafer Map.
 
         """
@@ -137,6 +137,12 @@ class P200L():
         """
         result = self.send_command(':SUB:NEXT?').split(' ')
         return int(result[0])
+
+    def lower_tips(self):
+        self.send_command(f':PRB:DN')
+
+    def raise_tips(self):
+        self.send_command(f':PRB:UP')
 
     def auto_raise(self, do_raise=None):
         """Set/get auto raising.
@@ -194,6 +200,11 @@ class P200L():
         """
         self.send_command(f':WFR:FILE {subsite_file}')
 
+    def get_wafer_file(self):
+        """Gets the current wafer map filename"""
+
+        return self.send_command(f':WFR:FILE?')
+
     def load_subsite_file(self, subsite_file):
         """Load a subsite file to the probe station. 
         
@@ -203,6 +214,11 @@ class P200L():
             wafer_file: File name to load.
         """
         self.send_command(f':SUB:FILE {subsite_file}')
+
+    def get_subsite_file(self):
+        """Gets the current subsite filename."""
+
+        return self.send_command(f':SUB:FILE?')
 
     def wafer_array_shape(self):
         """Return the shape of the wafer array.
@@ -215,8 +231,13 @@ class P200L():
         retval = list(map(lambda x:x.split(','),self.send_command(':WFR:MAP:CSV?').split('~')))
         return int(retval[4][1]), int(retval[3][1])
 
-    def wafer_array_shape(self):
+    def subsite_shape(self):
         """Returns the size of the subsite array."""
+        subfile = self.send_command(f':SUB:FILE?')
 
-        retval = list(map(lambda x:x.split(','),self.send_command(':WFR:MAP:CSV?').split('~')))
-        return int(retval[4][1]), int(retval[3][1])
+        with open(subfile, 'r') as f:
+            lines = list(f.readlines())
+
+        num_subsites = int(lines[-1].split(',')[0])
+
+        return num_subsites
