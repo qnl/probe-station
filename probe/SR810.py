@@ -6,7 +6,7 @@ Also see https://www.thinksrs.com/downloads/pdfs/manuals/SR810m.pdf for
 GPIB commands.
 """
 
-import visa
+import pyvisa as visa
 
 class SR810():
     def __init__(self,gpib_addr='GPIB0::8::INSTR'):

@@ -13,18 +13,21 @@ from time import sleep, time
 from probe.P200L import P200L
 from probe.SR810 import SR810
 
+
 class ProbeMeasurement():
     """Measurement class.
     """
 
     def __init__(
         self,
+        liftoff,
+        Rbias,
+        Vdiv,
         wafer_file=None,
         subsite_file=None,
         data_file='',
         p200_ip='192.168.0.6',
         p200_port=9002,
-        reset=False,
         online=True
     ):
         """Instantiate a measurement. 
@@ -42,6 +45,9 @@ class ProbeMeasurement():
                 untested.
         """
         self._online = online
+        self.liftoff = liftoff.isoformat() if isinstance(liftoff, dt.datetime) else liftoff
+        self.Rbias = Rbias
+        self.Vdiv = Vdiv
 
         if online:
             self._p200 = P200L(ip=p200_ip,port=p200_port)
@@ -56,8 +62,9 @@ class ProbeMeasurement():
         if subsite_file is not None:
             self._p200.load_subsite_file(subsite_file)
 
-        self.datashape = self.get_data_shape()
-        self.reset_data_array(reset_wafer_map=reset)
+
+        self.datashape = self.get_wafer_shape()
+        self.initialize_data()
 
     # def validate_filename(self, data_file, overwrite=False):
     #     """Initializes data_file.
@@ -101,6 +108,7 @@ class ProbeMeasurement():
     #     return path
 
     def get_h5(self, filename):
+        filename = f"{filename.split('.')[0]}.h5"
         path = Path(filename)
         overwrite = False
 
@@ -115,17 +123,19 @@ class ProbeMeasurement():
                 filename = input(message%(path))
                 
                 overwrite = filename == ''
-                filename = filename.split('.')[0].strip('/')
+                filename = filename.split('.')[0]
 
                 if filename:
                     path = Path(f'{filename}.h5')
             except FileNotFoundError:
                 break
 
-        if not path.exists():
-            self.initialize_h5(filename)
+        exists = path.exists()
+        print(f"Writing to data to {'existing' if exists else 'new'} file {path}.")
+        if not exists:
+            self.initialize_h5(path)
 
-        f = h5py.File(filename, 'a', libver='latest')
+        f = h5py.File(path, 'a', libver='latest')
         f.swmr_mode = True
         return f
 
@@ -133,10 +143,14 @@ class ProbeMeasurement():
         with h5py.File(filename, 'w', libver='latest') as f:
             f.attrs['wafer_map'] = self._p200.get_wafer_file()
             f.attrs['subsite_map'] = self._p200.get_subsite_file()
+            f.attrs['liftoff'] = self.liftoff
+            f.attrs['Rbias'] = self.Rbias
+            f.attrs['Vdiv'] = self.Vdiv
+            f.create_dataset('last_probe', data=-np.ones(3))
             f.create_dataset('voltages', data=self.data)
             f.create_dataset('times', data=self.times)
 
-    def get_data_shape(self):
+    def get_wafer_shape(self):
         wafer_x, wafer_y = self._p200.wafer_array_shape()
         num_subsites = self._p200.subsite_shape()
 
@@ -154,7 +168,13 @@ class ProbeMeasurement():
             self._p200.load_wafer_file(wafer_file)
             self._p200.load_subsite_file(subsite_file)
 
-    def reset_data_array(self, reset_wafer_map=True):
+
+    def initialize_data(self):
+        self.data = np.full(self.datashape, -1, dtype=np.float32)
+        # h5py doesn't support numpy U datatype. Max isoformat length is 15 characters.
+        self.times = np.full(self.datashape, '', dtype='S26')
+
+    def reset_wafer(self):
         """Reset data.
         
         Resets data and updates the size of the data array to reflect the number
@@ -164,12 +184,7 @@ class ProbeMeasurement():
         Args:
             reset_wafer_map: reset the wafer map so that all sites are untested
         """
-
-        self.data = np.full(self.datashape, -1)
-        self.times = np.full(self.datashape, '', dtype=np.str)
-
-        if reset_wafer_map:
-            self._p200.reset_wafer()
+        self._p200.reset_wafer()
         
     def probe_die(self, h5file, subsites=True):
         """Probe the current die and update the probe value data array.
@@ -184,11 +199,16 @@ class ProbeMeasurement():
         
         while index != -1:
             sleep(self.measure_time)
-            self.data[x_i, y_i, index] = self._lockin.voltage_in()
-            self.times[x_i, y_i, index] = dt.datetime.now().isoformat()
+            self.data[x_i, y_i, index - 1] = self._lockin.voltage_in()
+            self.times[x_i, y_i, index - 1] = dt.datetime.now().isoformat()
 
-            h5file['voltages'][x_i, y_i, index] = self.data[x_i, y_i, index]
-            h5file['times'][x_i, y_i, index] = self.times[x_i, y_i, index]
+            h5file['last_probe'][:] = (x_i, y_i, index)
+            h5file['voltages'][x_i, y_i, index - 1] = self.data[x_i, y_i, index - 1]
+            h5file['times'][x_i, y_i, index - 1] = self.times[x_i, y_i, index - 1]
+
+            h5file['last_probe'].flush()
+            h5file['voltages'].flush()
+            h5file['times'].flush()
 
             index = self._p200.goto_next_subsite()
 
@@ -215,8 +235,8 @@ class ProbeMeasurement():
 
     def probe_wafer(
         self,
-        data_file
-        reset_die=True,
+        data_file,
+        reset=True,
         use_pattern_recognition=True,
         subsites=True,
     ):
@@ -243,19 +263,21 @@ class ProbeMeasurement():
         h5file = self.get_h5(data_file)
 
         try:
-            if reset_die:
-                self.reset_data_array(reset_wafer_map=True)
+            if reset:
+                self._p200.reset_wafer()
+                self.initialize_data()
+                x_index, y_index = self._p200.goto_first_die()
             else:
                 x_index, y_index = self._p200.goto_same_die()
 
             while x_index < 1e6: # after the last die, x_index goes to a big number
                 self.probe_die(h5file)
+                x_index, y_index = self._p200.goto_next_die()
 
         except KeyboardInterrupt:
             end_time = dt.datetime.now()
             print(f'KeyboardInterrupt detected at {end_time}')
             self._p200.send_command(f':WFR:BIN {x_index} {y_index} T')
-            raise
         except:
             end_time = dt.datetime.now()
             print(f'Error detected at {end_time}')

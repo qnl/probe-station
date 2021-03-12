@@ -138,10 +138,10 @@ class P200L():
         result = self.send_command(':SUB:NEXT?').split(' ')
         return int(result[0])
 
-    def lower(self):
+    def lower_tips(self):
         self.send_command(f':PRB:DN')
 
-    def raise(self):
+    def raise_tips(self):
         self.send_command(f':PRB:UP')
 
     def auto_raise(self, do_raise=None):
@@ -233,5 +233,11 @@ class P200L():
 
     def subsite_shape(self):
         """Returns the size of the subsite array."""
-        raise NotImplementedError
-        return int(retval[4][1]), int(retval[3][1])
+        subfile = self.send_command(f':SUB:FILE?')
+
+        with open(subfile, 'r') as f:
+            lines = list(f.readlines())
+
+        num_subsites = int(lines[-1].split(',')[0])
+
+        return num_subsites
