@@ -1,5 +1,5 @@
 # Necessary for showing plot on Jupyter notebook
-%matplotlib notebook
+%matplotlib inline
 
 # Imports for instrument (SRS810) control
 import pyvisa as visa
@@ -10,6 +10,7 @@ from matplotlib import pyplot as plt
 import matplotlib.animation as animation
 import time
 import datetime as dt
+from IPython import display
 
 # Imports for File I/O
 import csv
@@ -76,15 +77,15 @@ class SR810_lockin():
             | 5     | 100 nV/fA     |
             | 6     | 200 nV/fA     |
             | 7     | 500 nV/fA     |
-            | 8     | 1 µV/pA       |
-            | 9     | 2 µV/pA       |
-            | 10    | 5 µV/pA       |
-            | 11    | 10 µV/pA      |
-            | 12    | 20 µV/pA      |
-            | 13    | 50 µV/pA      |
-            | 14    | 100 µV/pA     |
-            | 15    | 200 µV/pA     |
-            | 16    | 500 µV/pA     |
+            | 8     | 1 ÂµV/pA       |
+            | 9     | 2 ÂµV/pA       |
+            | 10    | 5 ÂµV/pA       |
+            | 11    | 10 ÂµV/pA      |
+            | 12    | 20 ÂµV/pA      |
+            | 13    | 50 ÂµV/pA      |
+            | 14    | 100 ÂµV/pA     |
+            | 15    | 200 ÂµV/pA     |
+            | 16    | 500 ÂµV/pA     |
             | 17    | 1 mV/nA       |
             | 18    | 2 mV/nA       |
             | 19    | 5 mV/nA       |
@@ -94,7 +95,7 @@ class SR810_lockin():
             | 23    | 100 mV/nA     |
             | 24    | 200 mV/nA     |
             | 25    | 500 mV/nA     |
-            | 26    | 1 V/µA        |
+            | 26    | 1 V/ÂµA        |
         """
         if sense is not None:
             assert sense >= 0 and sense <= 26, 'Sense "{}" is out of range'.format(sense)
@@ -112,10 +113,10 @@ class SR810_lockin():
             The time constant parameters are given below.
             | TC    | Time      |
             |-------|-----------|
-            | 0     | 10 µs     |
-            | 1     | 30 µs     |
-            | 2     | 100 µs    |
-            | 3     | 300 µs    |
+            | 0     | 10 Âµs     |
+            | 1     | 30 Âµs     |
+            | 2     | 100 Âµs    |
+            | 3     | 300 Âµs    |
             | 4     | 1 ms      |
             | 5     | 3 ms      |
             | 6     | 10 ms     |
@@ -147,31 +148,29 @@ if __name__ == '__main__':
     
     # Instrument initialization
     inst = SR810_lockin('GPIB0::8::INSTR')
-    
+    plt.figure(figsize=(8,5))
     # Plotting initialization
-    fig = plt.figure(figsize=(8,5), dpi= 100, facecolor='w', edgecolor='k')
-    ax = fig.add_subplot(111)
-    plt.ion()
-    fig.show()
-    fig.canvas.draw()
     
     try:
         while True: # Continuously taking data; click 'stop kernel' to quit data taking
             T.append(dt.datetime.now().strftime('%H:%M:%S'))
             Volt = inst.voltage_in()
-            data.append(Volt)
+            R = Volt/(1-Volt) * 100000 *100 #not exact!
+            data.append(R)
             
-            ax.clear()
+        
             plt.xticks(rotation=45, ha='right')
             plt.subplots_adjust(bottom=0.30)
-            plt.title('Voltage vs Time')
-            plt.ylabel('Volts')
+            plt.title('Resistance vs Time')
+            plt.ylabel('R')
             if len(T)>20:
-                ax.plot(T[len(T)-20:len(T)], data[len(data)-20:len(data)]) # Shows recent 20 data points to not cram x-axis
+                plt.plot(T[len(T)-20:len(T)], data[len(data)-20:len(data)]) # Shows recent 20 data points to not cram x-axis
             else:
-                ax.plot(T,data)
-            fig.canvas.draw()
-            time.sleep(1) # Places around 1 second interval between data collection
+                plt.plot(T,data)
+            plt.plot(T, data, 'k')
+            display.clear_output(wait=True)
+            display.display(plt.gcf())
+            time.sleep(0.1) # Places around 1 second interval between data collection
             continue
         
     except KeyboardInterrupt: # data saving procedures 
@@ -182,7 +181,7 @@ if __name__ == '__main__':
         filename =  "LaserV_"+ current_date_and_time_string + extension
         foldername = "LaserV_" + current_date
 
-        with open(filename, 'wb') as csvfile: # Saves data to csv file
+        with open(filename, 'w') as csvfile: # Saves data to csv file
             filewriter = csv.writer(csvfile, delimiter=',',
                             quotechar='|', quoting=csv.QUOTE_MINIMAL)
             filewriter.writerow(T)
@@ -198,9 +197,20 @@ if __name__ == '__main__':
             
         print("saved " + filename) # To indicate successful completion of script
         
-        ax.clear() # Plot final result. 
-        plt.plot(list(range(0,len(T))),data) # X-axis tweaked so that it isn't clustered with timestamps
-        plt.title('Voltage vs Time')
-        plt.ylabel('Volts')
-        plt.show()
+        plt.clf() # Plot final result. 
         
+        if len(T) < len(data):
+            plt.plot(list(range(0,len(T)+1)),data) # X-axis tweaked so that it isn't clustered with timestamps
+            plt.title('Voltage vs Time')
+            plt.ylabel('Volts')
+            plt.show()
+        elif len(T) > len(data):
+            plt.plot(list(range(0,len(T)-1)),data) # X-axis tweaked so that it isn't clustered with timestamps
+            plt.title('Voltage vs Time')
+            plt.ylabel('Volts')
+            plt.show()
+        else:
+            plt.plot(list(range(0,len(T))),data) # X-axis tweaked so that it isn't clustered with timestamps
+            plt.title('Voltage vs Time')
+            plt.ylabel('Volts')
+            plt.show()
