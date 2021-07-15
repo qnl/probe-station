@@ -1,19 +1,6 @@
-# Necessary for showing plot on Jupyter notebook
-%matplotlib inline
-
 # Imports for instrument (SRS810) control
 import pyvisa as visa
 import numpy as np
-
-# Imports for plotting
-from matplotlib import pyplot as plt 
-import matplotlib.animation as animation
-import time
-import datetime as dt
-
-# Imports for File I/O
-import csv
-import os
 
 # SRS810 code pulled from QNLgit/probestation. Contains methods for reading and writing to device
 class SR810_lockin():
@@ -55,6 +42,19 @@ class SR810_lockin():
             return(-1)
 
         return float(self.dev.query('OUTP? 3'))
+    
+    def freq_out(self, freq=None):
+        """Get/Set the excitation voltage of the lockin
+        
+        Args: 
+            voltage: Voltage in volts. `None` to query.
+        
+        Returns: 
+            voltage in volts.
+        """
+        if freq is not None:
+            self.dev.write('FREQ {}'.format(freq))
+        return float(self.dev.query('FREQ?'))
 
     def sensitivity(self,sense=None):
         """Get/set the sensitivity of the lockin.
@@ -139,8 +139,24 @@ class SR810_lockin():
             self.dev.write('OFLT {}'.format(tc))
         return float(self.dev.query('OFLT?'))
 
-            
-if __name__ == '__main__':
+#--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+# Necessary for showing plot on Jupyter notebook
+%matplotlib inline
+
+# Imports for plotting
+from matplotlib import pyplot as plt 
+import matplotlib.animation as animation
+import time
+import datetime as dt
+from IPython import display
+
+# Imports for File I/O
+import csv
+import os
+
+# simple continuously plotting function
+def continuous_plotting():
     # data arrays
     T = []
     data = []
@@ -154,21 +170,22 @@ if __name__ == '__main__':
         while True: # Continuously taking data; click 'stop kernel' to quit data taking
             T.append(dt.datetime.now().strftime('%H:%M:%S'))
             Volt = inst.voltage_in()
-            data.append(Volt)
+            R = Volt/(1-Volt) * 100000 *100 #not exact!
+            data.append(R)
             
-            ax.clear()
+        
             plt.xticks(rotation=45, ha='right')
             plt.subplots_adjust(bottom=0.30)
-            plt.title('Voltage vs Time')
-            plt.ylabel('Volts')
+            plt.title('Resistance vs Time')
+            plt.ylabel('R')
             if len(T)>20:
-                ax.plot(T[len(T)-20:len(T)], data[len(data)-20:len(data)]) # Shows recent 20 data points to not cram x-axis
+                plt.plot(T[len(T)-20:len(T)], data[len(data)-20:len(data)]) # Shows recent 20 data points to not cram x-axis
             else:
-                ax.plot(T,data)
+                plt.plot(T,data)
             plt.plot(T, data, 'k')
             display.clear_output(wait=True)
             display.display(plt.gcf())
-            time.sleep(0.5) # Places around 1 second interval between data collection
+            time.sleep(0.1) # Places around 1 second interval between data collection
             continue
         
     except KeyboardInterrupt: # data saving procedures 
@@ -212,3 +229,84 @@ if __name__ == '__main__':
             plt.title('Voltage vs Time')
             plt.ylabel('Volts')
             plt.show()
+    
+          
+# sweep of frequencies with lock-in
+def freq_sweep(f_range, iterations):
+    # data arrays for means and deviations
+    inst = SR810_lockin('GPIB0::8::INSTR')
+    means = np.zeros(len(f_range))
+    devs = np.zeros(len(f_range))
+    percent_devs = np.zeros(len(f_range))
+    
+    for freq in f_range:
+        count = 0
+        data = np.zeros(iterations)
+        inst.freq_out(freq)
+        for i in range(iterations):
+            Volt = inst.voltage_in()
+            R = Volt/(1-Volt) * 100000 *100 #not exact!
+            data[i] = R
+        means[count] = np.mean(data)
+        devs[count] = np.std(data)
+        percent_devs[count] = np.std(data) / np.mean(data)
+        
+        count +=1
+    
+    current_date = dt.datetime.now().strftime('%Y_%m_%d') # Saves foldername with current date
+    current_date_and_time = dt.datetime.now().strftime('%Y_%m_%d_%H.%M.%S') # Saves filename with current date and time
+    current_date_and_time_string = str(current_date_and_time)
+    extension = ".csv"
+    filename =  "Freq_Sweep_"+ current_date_and_time_string + extension
+    foldername = "Freq_Sweep_" + current_date
+    
+    with open(filename, 'w') as csvfile: # Saves data to csv file
+        filewriter = csv.writer(csvfile, delimiter=',',
+                            quotechar='|', quoting=csv.QUOTE_MINIMAL)
+        filewriter.writerow(f_range)
+        filewriter.writerow(means)
+        filewriter.writerow(devs)
+        filewriter.writerow(percent_devs)
+        
+    dir_path = os.path.dirname(os.path.realpath(filename)) # Creates folder with foldername and moves file to this folder
+    newdir = os.path.join(dir_path, foldername)
+    if not os.path.exists(newdir):
+        os.makedirs(newdir)
+    oldpath = os.path.join(dir_path, filename)
+    newpath = os.path.join(newdir, filename)
+    os.rename(oldpath, newpath)
+            
+    print("saved " + filename) # To indicate successful completion of script
+    #plotting
+    fig, ax = plt.subplots(nrows=3, ncols=1,figsize=(10,15))
+
+    plt.subplot(3, 1, 1)
+    plt.plot(f_range, means)
+    plt.title('Means vs Freq')
+    plt.xlabel('Freq')
+    plt.ylabel('R_Means (Ohms)')
+
+    plt.subplot(3, 1, 2)
+    plt.plot(f_range, devs)
+    plt.title('Spread vs Freq')
+    plt.xlabel('Freq')
+    plt.ylabel('Spread (Ohms)')
+
+    plt.subplot(3, 1, 3)
+    plt.plot(f_range, percent_devs)
+    plt.title('Percent Spread vs Freq')
+    plt.xlabel('Freq')
+    plt.ylabel('Percent Spread (Spread/Mean)')
+
+    plt.show()
+    plotextension = '.pdf'
+    plotname = "Freq_Sweep_plot_"+ current_date_and_time_string + plotextension
+    oldpath = os.path.join(dir_path, plotname)
+    newpath = os.path.join(newdir, plotname)
+    fig.savefig(newpath)
+    
+    print("saved " + plotname) # To indicate successful completion of script
+    
+    inst.freq_out(817) # revert to default frequency of 817Hz
+        
+        
