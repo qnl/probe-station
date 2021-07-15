@@ -19,6 +19,19 @@ class SR810():
         """Reinstantiate the device."""
         self.dev = visa.ResourceManager().open_resource(self.gpib_addr)
 
+    def freq_out(self, freq=None):
+        """Get/Set the freq of the lockin
+        
+        Args: 
+            freq: Frequency in Hz. `None` to query.
+        
+        Returns: 
+            frequency in Hz.
+        """
+        if freq is not None:
+            self.dev.write('FREQ {}'.format(freq))
+        return float(self.dev.query('FREQ?'))
+
     def voltage_out(self, voltage=None):
         """Get/Set the excitation voltage of the lockin
         

@@ -23,8 +23,10 @@ class ProbeMeasurement():
         liftoff,
         Rbias,
         Vdiv,
+        lockin=dict(sensitivity=18, freq=823),
         wafer_file=None,
         subsite_file=None,
+        subsite_map=None,
         data_file='',
         p200_ip='192.168.0.6',
         p200_port=9002,
@@ -48,10 +50,14 @@ class ProbeMeasurement():
         self.liftoff = liftoff.isoformat() if isinstance(liftoff, dt.datetime) else liftoff
         self.Rbias = Rbias
         self.Vdiv = Vdiv
+        self.subsite_dir = Path('C:\\netProbe7\\bin\\')
 
         if online:
             self._p200 = P200L(ip=p200_ip,port=p200_port)
             self._lockin = SR810()
+
+            self._lockin.freq_out(lockin['freq'])
+            self._lockin.sensitivity(lockin['sensitivity'])
 
         self.h5 = None
 
@@ -61,6 +67,8 @@ class ProbeMeasurement():
             self._p200.load_wafer_file(wafer_file)
         if subsite_file is not None:
             self._p200.load_subsite_file(subsite_file)
+
+        self.subsite_map = subsite_map
 
 
         self.datashape = self.get_wafer_shape()
@@ -192,6 +200,11 @@ class ProbeMeasurement():
 
         x_i, y_i = self._p200.get_die()
         print(f'Starting die. x:{x_i}, y:{y_i}')
+
+        if self.subsite_map is not None:
+            subfile = self.subsite_dir/self.subsite_map[x_i, y_i]
+            self._p200.load_subsite_file(subfile)
+
         tic = time()
 
         index = 1
@@ -238,7 +251,7 @@ class ProbeMeasurement():
         data_file,
         reset=True,
         use_pattern_recognition=True,
-        subsites=True,
+        subsites=True
     ):
         """Probe a full wafer. 
         
