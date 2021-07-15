@@ -28,10 +28,18 @@ def Ej(V, Rbias, Vdiv, Vshort, scaling=1e9):
     return RFLUX_Q*Ic(V,Rbias,Vdiv,Vshort,scaling=1)/HPLANCK/scaling
 
 def f(V, Rbias, Vdiv, Vshort, Ec, scaling=1e9):
-    return np.sqrt(8*Ec*Ej(V, Rbias, Vdiv, Vshort), scaling=1)/scaling - Ec
+    return (np.sqrt(8*Ec*Ej(V, Rbias, Vdiv, Vshort, scaling=1)) - Ec)/scaling
 
 def V(V, scaling=1e-3, **kwargs):
     return V/scaling
+
+def VfromR(R, Rbias, Vdiv, scaling=1):
+    
+    V = Vdiv/(Rbias/R + 1.)
+
+    return (V)/scaling
+
+
 
 convert_funcs = {
     'R': R,
@@ -154,10 +162,11 @@ class ProbeAnalysis():
 
         return vals
 
-    def plot(self, threshold=None, relative=True, subsite_shape=None, serpentine=False, mode='V', ckwargs={}):
+    def plot(self, threshold=None, relative=True, subsite_shape=None, serpentine=False, mode='V', ckwargs={}, aging=1):
         if subsite_shape is None:
             subsite_shape = (self._voltages.shape[-1], 1)
         vals = self.get_voltages(threshold=threshold, relative=relative, subsite_shape=subsite_shape, serpentine=serpentine)
+        vals *= aging
 
         try:
             convert_kwargs = dict(Rbias=self.Rbias, Vdiv=self.Vdiv, Vshort=0)
