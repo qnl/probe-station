@@ -1,0 +1,55 @@
+[build-system]
+requires = [
+    "setuptools>=42",
+    "wheel"
+]
+build-backend="setuptools.build_meta"
+
+[project]
+name = "probe"
+version = "0.3.0"
+authors = [
+    {name = "Larry Chen", email = "larrychen@berkeley.edu"},
+]
+description = "Probe Station Automation"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "attrs",
+]
+
+[project.optional-dependencies]
+dev = [
+    "black",
+    "isort",
+    "mkdocs-material",
+    "mkdocstrings[python]",
+    "mkdocs-git-revision-date-localized-plugin",
+    "mkdocs-git-authors-plugin",
+    "pydantic-settings",
+    "pytest",
+    "ruff",
+    "typer"
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["probe*"]
+namespaces = false
+
+[tool.pytest.ini_options]
+log_cli = true
+log_cli_level = "INFO"
+
+markers = [
+    "skip_instrument: Skip instrument tests if they are not available.",
+    "skip_dataserver: Skip dataserver tests on live datasever."
+]
+filterwarnings = [
+    "ignore:.*pkg_resources.*:DeprecationWarning"
+]
+
+[tool.isort]
+profile = "black"
+skip_gitignore = true
+py_version = 312
